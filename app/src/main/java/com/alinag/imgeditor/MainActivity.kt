@@ -35,8 +35,7 @@ import kotlinx.coroutines.experimental.launch
 import java.io.InputStream
 
 
-class MainActivity : AppCompatActivity(), DialogHelper.PermissionCallback {
-
+class MainActivity : AppCompatActivity(), DialogHelper.PermissionCallback, ImageHelper.ErrorCallback {
     private val rootParent = Job()
     private lateinit var imageHelper: ImageHelper
     private lateinit var dialogHelper: DialogHelper
@@ -63,10 +62,13 @@ class MainActivity : AppCompatActivity(), DialogHelper.PermissionCallback {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        imageHelper = ImageHelper.instance
+        imageHelper = ImageHelper.instance.apply {
+            errorCallback = this@MainActivity
+        }
         dialogHelper = DialogHelper.instance.apply {
             permissionCallback = this@MainActivity
         }
+
 
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener)
         chooseButton.setOnClickListener { onChooseImageButtonClicked() }
@@ -138,6 +140,12 @@ class MainActivity : AppCompatActivity(), DialogHelper.PermissionCallback {
                     Toast.makeText(this@MainActivity, "Finish", Toast.LENGTH_SHORT).show()
                 }
             }
+        }
+    }
+
+    override fun onImageLoadedError() {
+        launch(UI, parent = rootParent) {
+            Toast.makeText(this@MainActivity, "Choose another image format, bitch", Toast.LENGTH_SHORT).show()
         }
     }
 
