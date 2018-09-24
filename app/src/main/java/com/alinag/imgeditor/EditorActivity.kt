@@ -1,41 +1,36 @@
 package com.alinag.imgeditor
 
 import android.Manifest
+import android.arch.lifecycle.ViewModelProviders
 import android.content.Intent
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
+import android.content.pm.PackageManager
 import android.graphics.ColorMatrix
 import android.graphics.ColorMatrixColorFilter
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
-import android.provider.MediaStore
-import android.support.design.widget.BottomNavigationView
-import android.support.v4.content.FileProvider
-import android.support.v7.app.AppCompatActivity
-import kotlinx.android.synthetic.main.activity_main.*
-import java.io.File
-import java.io.FileOutputStream
-import kotlinx.android.synthetic.main.activity_main.bw_filter_button as bwFilterButton
-import kotlinx.android.synthetic.main.activity_main.choose_image_button as chooseButton
-import android.content.ContentResolver
-import android.content.pm.PackageManager
 import android.provider.Settings
+import android.support.design.widget.BottomNavigationView
 import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
+import android.support.v7.app.AppCompatActivity
 import android.widget.Toast
 import com.epam.test.DialogHelper
 import com.epam.test.DialogHelper.Companion.ACTION_OPEN_OPTIONS
 import com.epam.test.DialogHelper.Companion.ACTION_PERMISSION_REQUEST
 import com.epam.test.ImageHelper
+import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.experimental.CommonPool
 import kotlinx.coroutines.experimental.Job
 import kotlinx.coroutines.experimental.android.UI
 import kotlinx.coroutines.experimental.launch
-import java.io.InputStream
+import kotlinx.android.synthetic.main.activity_main.bw_filter_button as bwFilterButton
+import kotlinx.android.synthetic.main.activity_main.choose_image_button as chooseButton
+import kotlinx.android.synthetic.main.activity_main.save_button as saveButton
 
 
-class MainActivity : AppCompatActivity(), DialogHelper.PermissionCallback, ImageHelper.ErrorCallback {
+class EditorActivity : AppCompatActivity(), DialogHelper.PermissionCallback {
+
     private val rootParent = Job()
     private lateinit var imageHelper: ImageHelper
     private lateinit var dialogHelper: DialogHelper
@@ -62,22 +57,21 @@ class MainActivity : AppCompatActivity(), DialogHelper.PermissionCallback, Image
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        imageHelper = ImageHelper.instance.apply {
-            errorCallback = this@MainActivity
-        }
         dialogHelper = DialogHelper.instance.apply {
-            permissionCallback = this@MainActivity
+            permissionCallback = this@EditorActivity
         }
 
+        val model = ViewModelProviders.of(this).get(EditorViewModel::class.java)
 
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener)
         chooseButton.setOnClickListener { onChooseImageButtonClicked() }
         bwFilterButton.setOnClickListener { onBwFilterButtonClick() }
+        saveButton.setOnClickListener { onSaveImageButtonClicked() }
     }
 
     override fun onPositiveButtonClicked(action: Int) {
         when (action) {
-            ACTION_PERMISSION_REQUEST -> ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), MainActivity.REQUEST_WRITE_STORAGE)
+            ACTION_PERMISSION_REQUEST -> ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), EditorActivity.REQUEST_WRITE_STORAGE)
             ACTION_OPEN_OPTIONS -> startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + BuildConfig.APPLICATION_ID)))
         }
     }
@@ -89,19 +83,19 @@ class MainActivity : AppCompatActivity(), DialogHelper.PermissionCallback, Image
             openGallery()
         }
     }
+
     private fun onSaveImageButtonClicked() {
         inner@ launch(CommonPool, parent = rootParent) {
             launch(UI, parent = rootParent) {
-                Toast.makeText(this@MainActivity, "Start", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@EditorActivity, "Start", Toast.LENGTH_SHORT).show()
             }
             imageHelper.writeToFile()
 
             launch(UI, parent = rootParent) {
-                Toast.makeText(this@MainActivity, "Finish", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@EditorActivity, "Finish", Toast.LENGTH_SHORT).show()
             }
         }
     }
-
 
     private fun onBwFilterButtonClick() = imageView.apply { colorFilter = ColorMatrixColorFilter(ColorMatrix().apply { setSaturation(0f) }) }
 
@@ -130,22 +124,16 @@ class MainActivity : AppCompatActivity(), DialogHelper.PermissionCallback, Image
             inner@ launch(CommonPool, parent = rootParent) {
 
                 launch(UI, parent = rootParent) {
-                    Toast.makeText(this@MainActivity, "Start", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@EditorActivity, "Start", Toast.LENGTH_SHORT).show()
                 }
 
-                val resized = imageHelper.getScaledImage(data.data, this@MainActivity)
+                val resized = imageHelper.getScaledImage(data.data, this@EditorActivity)
 
                 launch(UI, parent = rootParent) {
                     if (resized != null) imageView.setImageBitmap(resized)
-                    Toast.makeText(this@MainActivity, "Finish", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@EditorActivity, "Finish", Toast.LENGTH_SHORT).show()
                 }
             }
-        }
-    }
-
-    override fun onImageLoadedError() {
-        launch(UI, parent = rootParent) {
-            Toast.makeText(this@MainActivity, "Choose another image format, bitch", Toast.LENGTH_SHORT).show()
         }
     }
 
