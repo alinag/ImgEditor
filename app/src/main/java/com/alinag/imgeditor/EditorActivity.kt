@@ -15,10 +15,8 @@ import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
 import android.support.v7.app.AppCompatActivity
 import android.widget.Toast
-import com.epam.test.DialogHelper
-import com.epam.test.DialogHelper.Companion.ACTION_OPEN_OPTIONS
-import com.epam.test.DialogHelper.Companion.ACTION_PERMISSION_REQUEST
-import com.epam.test.ImageHelper
+import com.alinag.imgeditor.DialogHelper.Companion.ACTION_OPEN_OPTIONS
+import com.alinag.imgeditor.DialogHelper.Companion.ACTION_PERMISSION_REQUEST
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.experimental.CommonPool
 import kotlinx.coroutines.experimental.Job
@@ -61,6 +59,8 @@ class EditorActivity : AppCompatActivity(), DialogHelper.PermissionCallback {
             permissionCallback = this@EditorActivity
         }
 
+        imageHelper = ImageHelper.instance
+
         val model = ViewModelProviders.of(this).get(EditorViewModel::class.java)
 
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener)
@@ -89,7 +89,7 @@ class EditorActivity : AppCompatActivity(), DialogHelper.PermissionCallback {
             launch(UI, parent = rootParent) {
                 Toast.makeText(this@EditorActivity, "Start", Toast.LENGTH_SHORT).show()
             }
-            imageHelper.writeToFile()
+            imageHelper.writeToFile(this@EditorActivity)
 
             launch(UI, parent = rootParent) {
                 Toast.makeText(this@EditorActivity, "Finish", Toast.LENGTH_SHORT).show()
